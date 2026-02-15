@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dual Model Translator</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap');
+
+        :root {
+            --bg-1: #6d7ce6;
+            --bg-2: #7f5bbd;
+            --panel: #ffffff;
+            --ink: #1f2430;
+            --muted: #667085;
+            --accent-custom: #ff6b35;
+            --accent-mbart: #4f7df3;
+            --accent-2: #6b3fc2;
+            --border: #e4e7ee;
+            --shadow: rgba(20, 20, 50, 0.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            color: var(--ink);
+            background: radial-gradient(1200px 800px at 10% 10%, #8aa3ff 0%, transparent 60%),
+                        linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 100%);
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 12px;
+            font-size: 2.5rem;
+            letter-spacing: 0.5px;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .main-subtitle {
+            text-align: center;
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 32px;
+            font-size: 1.1rem;
+        }
+
+        .models-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-top: 24px;
+        }
+
+        .model-panel {
+            background: var(--panel);
+            border-radius: 18px;
+            box-shadow: 0 20px 50px var(--shadow);
+            padding: 28px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .model-panel:before {
+            content: '';
+            position: absolute;
+            top: -80px;
+            right: -80px;
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            opacity: 0.1;
+        }
+
+        .model-panel.custom:before {
+            background: var(--accent-custom);
+        }
+
+        .model-panel.mbart:before {
+            background: var(--accent-mbart);
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .panel-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .model-panel.custom .panel-title {
+            color: var(--accent-custom);
+        }
+
+        .model-panel.mbart .panel-title {
+            color: var(--accent-mbart);
+        }
+
+        .badge {
+            display: inline-block;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 16px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .model-panel.custom .badge {
+            background: linear-gradient(135deg, #ff6b35, #ff8c42);
+        }
+
+        .model-panel.mbart .badge {
+            background: linear-gradient(135deg, #4f7df3, #6b3fc2);
+        }
+
+        .model-info {
+            background: #f8f9fb;
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+
+        .lang-selector {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .select-wrapper {
+            position: relative;
+        }
+
+        select {
+            width: 100%;
+            padding: 10px 32px 10px 12px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-family: inherit;
+            background: white;
+            color: var(--ink);
+            cursor: pointer;
+            appearance: none;
+            transition: all 0.2s;
+        }
+
+        select:hover {
+            border-color: var(--accent-mbart);
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--accent-mbart);
+            box-shadow: 0 0 0 3px rgba(79, 125, 243, 0.1);
+        }
+
+        select:disabled {
+            background: #f9fafb;
+            cursor: not-allowed;
+            opacity: 0.8;
+        }
+
+        .select-wrapper:after {
+            content: '▼';
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            color: var(--muted);
+            font-size: 0.7rem;
+        }
+
+        .select-wrapper.disabled-select:after {
+            display: none;
+        }
+
+        .swap-btn {
+            background: linear-gradient(135deg, var(--accent-mbart), var(--accent-2));
+            border: none;
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            box-shadow: 0 3px 10px rgba(79, 125, 243, 0.3);
+        }
+
+        .swap-btn:hover {
+            transform: rotate(180deg);
+        }
+
+        .text-areas {
+            display: grid;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: var(--ink);
+            font-size: 0.85rem;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 12px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            resize: vertical;
+            transition: all 0.2s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent-mbart);
+            box-shadow: 0 0 0 3px rgba(79, 125, 243, 0.1);
+        }
+
+        textarea:disabled {
+            background: #f9fafb;
+            color: var(--muted);
+        }
+
+        .char-count {
+            text-align: right;
+            font-size: 0.75rem;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        .btn-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .btn {
+            flex: 1;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .model-panel.custom .btn-translate {
+            background: linear-gradient(135deg, #ff6b35, #ff8c42);
+            box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+        }
+
+        .model-panel.mbart .btn-translate {
+            background: linear-gradient(135deg, var(--accent-mbart), var(--accent-2));
+            box-shadow: 0 4px 12px rgba(79, 125, 243, 0.3);
+        }
+
+        .btn-translate:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(79, 125, 243, 0.4);
+        }
+
+        .btn-translate:active {
+            transform: translateY(0);
+        }
+
+        .btn-translate:disabled {
+            background: linear-gradient(135deg, #ccc, #999);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-clear {
+            background: white;
+            color: var(--accent-mbart);
+            border: 2px solid var(--accent-mbart);
+            box-shadow: none;
+        }
+
+        .btn-clear:hover {
+            background: var(--accent-mbart);
+            color: white;
+        }
+
+        .error {
+            background: #fff1f1;
+            color: #a12f2f;
+            border: 1px solid #ffd0d0;
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 12px;
+            color: var(--accent-mbart);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(79, 125, 243, 0.3);
+            border-top-color: var(--accent-mbart);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 1024px) {
+            .models-grid {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+        }
+
+        .icon {
+            font-size: 1.3rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <h1>🌐 Dual Model Translator</h1>
+        <p class="main-subtitle">Compare translations from your custom trained model and fine-tuned mBART-50</p>
+
+        <div class="models-grid">
+            <!-- Custom Model Panel -->
+            <div class="model-panel custom">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span class="icon">🔧</span>
+                        <span>Custom Model</span>
+                    </div>
+                    <span class="badge">LSTM Seq2Seq</span>
+                </div>
+
+                <div class="model-info">
+                    ℹ️ Your custom trained model (Currently supports: English → Spanish only)
+                </div>
+
+                <div class="error" id="error-custom"></div>
+
+                <div class="lang-selector">
+                    <div class="select-wrapper disabled-select">
+                        <select id="source-lang-custom" disabled>
+                            <option value="en_US" selected>English</option>
+                        </select>
+                    </div>
+                    <div style="width: 36px; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 1.2rem;">→</div>
+                    <div class="select-wrapper disabled-select">
+                        <select id="target-lang-custom" disabled>
+                            <option value="es_ES" selected>Spanish</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="text-areas">
+                    <div>
+                        <label for="input-custom">Source Text</label>
+                        <textarea id="input-custom" placeholder="Enter text to translate..." maxlength="500"></textarea>
+                        <div class="char-count"><span id="char-count-custom">0</span>/500</div>
+                    </div>
+                    <div>
+                        <label for="output-custom">Translation</label>
+                        <textarea id="output-custom" placeholder="Translation will appear here..." disabled></textarea>
+                    </div>
+                </div>
+
+                <div class="loading" id="loading-custom">
+                    <span class="spinner"></span>Translating...
+                </div>
+
+                <div class="btn-container">
+                    <button class="btn btn-translate" onclick="translateCustom()">Translate</button>
+                    <button class="btn btn-clear" onclick="clearPanel('custom')">Clear</button>
+                </div>
+            </div>
+
+            <!-- mBART Model Panel -->
+            <div class="model-panel mbart">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span class="icon">🤖</span>
+                        <span>mBART Model</span>
+                    </div>
+                    <span class="badge">Fine-tuned</span>
+                </div>
+
+                <div class="model-info">
+                    ℹ️ Fine-tuned mBART-50 supporting 10 languages
+                </div>
+
+                <div class="error" id="error-mbart"></div>
+
+                <div class="lang-selector">
+                    <div class="select-wrapper">
+                        <select id="source-lang-mbart">
+                            {% for code, name in languages.items() %}
+                            <option value="{{ code }}" {% if code == 'en_US' %}selected{% endif %}>{{ name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button class="swap-btn" onclick="swapLanguages('mbart')" title="Swap languages">⇄</button>
+                    <div class="select-wrapper">
+                        <select id="target-lang-mbart">
+                            {% for code, name in languages.items() %}
+                            <option value="{{ code }}" {% if code == 'es_ES' %}selected{% endif %}>{{ name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="text-areas">
+                    <div>
+                        <label for="input-mbart">Source Text</label>
+                        <textarea id="input-mbart" placeholder="Enter text to translate..." maxlength="500"></textarea>
+                        <div class="char-count"><span id="char-count-mbart">0</span>/500</div>
+                    </div>
+                    <div>
+                        <label for="output-mbart">Translation</label>
+                        <textarea id="output-mbart" placeholder="Translation will appear here..." disabled></textarea>
+                    </div>
+                </div>
+
+                <div class="loading" id="loading-mbart">
+                    <span class="spinner"></span>Translating...
+                </div>
+
+                <div class="btn-container">
+                    <button class="btn btn-translate" onclick="translateMbart()">Translate</button>
+                    <button class="btn btn-clear" onclick="clearPanel('mbart')">Clear</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Character counters
+        document.getElementById('input-custom').addEventListener('input', (e) => {
+            document.getElementById('char-count-custom').textContent = e.target.value.length;
+        });
+
+        document.getElementById('input-mbart').addEventListener('input', (e) => {
+            document.getElementById('char-count-mbart').textContent = e.target.value.length;
+        });
+
+        // Translate on Ctrl+Enter
+        document.getElementById('input-custom').addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') translateCustom();
+        });
+
+        document.getElementById('input-mbart').addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') translateMbart();
+        });
+
+        function swapLanguages(model) {
+            const sourceLang = document.getElementById(`source-lang-${model}`);
+            const targetLang = document.getElementById(`target-lang-${model}`);
+            const inputText = document.getElementById(`input-${model}`);
+            const outputText = document.getElementById(`output-${model}`);
+            
+            const temp = sourceLang.value;
+            sourceLang.value = targetLang.value;
+            targetLang.value = temp;
+            
+            if (outputText.value && inputText.value) {
+                const tempText = inputText.value;
+                inputText.value = outputText.value;
+                outputText.value = tempText;
+                document.getElementById(`char-count-${model}`).textContent = inputText.value.length;
+            }
+        }
+
+        async function translateCustom() {
+            const text = document.getElementById('input-custom').value.trim();
+            const sourceLang = document.getElementById('source-lang-custom').value;
+            const targetLang = document.getElementById('target-lang-custom').value;
+            const outputText = document.getElementById('output-custom');
+            const errorMsg = document.getElementById('error-custom');
+            const loading = document.getElementById('loading-custom');
+
+            if (!text) {
+                showError('custom', 'Please enter some text to translate');
+                return;
+            }
+
+            if (sourceLang === targetLang) {
+                showError('custom', 'Source and target languages must be different');
+                return;
+            }
+
+            hideError('custom');
+            loading.classList.add('active');
+            outputText.value = '';
+
+            try {
+                const response = await fetch('/translate_custom', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: text,
+                        source_lang: sourceLang,
+                        target_lang: targetLang
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    outputText.value = data.translation;
+                } else {
+                    showError('custom', data.error || 'Translation failed');
+                }
+            } catch (error) {
+                showError('custom', 'Network error. Please check your connection.');
+                console.error('Error:', error);
+            } finally {
+                loading.classList.remove('active');
+            }
+        }
+
+        async function translateMbart() {
+            const text = document.getElementById('input-mbart').value.trim();
+            const sourceLang = document.getElementById('source-lang-mbart').value;
+            const targetLang = document.getElementById('target-lang-mbart').value;
+            const outputText = document.getElementById('output-mbart');
+            const errorMsg = document.getElementById('error-mbart');
+            const loading = document.getElementById('loading-mbart');
+
+            if (!text) {
+                showError('mbart', 'Please enter some text to translate');
+                return;
+            }
+
+            if (sourceLang === targetLang) {
+                showError('mbart', 'Source and target languages must be different');
+                return;
+            }
+
+            hideError('mbart');
+            loading.classList.add('active');
+            outputText.value = '';
+
+            try {
+                const response = await fetch('/translate_mbart', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: text,
+                        source_lang: sourceLang,
+                        target_lang: targetLang
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    outputText.value = data.translation;
+                } else {
+                    showError('mbart', data.error || 'Translation failed');
+                }
+            } catch (error) {
+                showError('mbart', 'Network error. Please check your connection.');
+                console.error('Error:', error);
+            } finally {
+                loading.classList.remove('active');
+            }
+        }
+
+        function clearPanel(model) {
+            document.getElementById(`input-${model}`).value = '';
+            document.getElementById(`output-${model}`).value = '';
+            document.getElementById(`char-count-${model}`).textContent = '0';
+            hideError(model);
+        }
+
+        function showError(model, message) {
+            const errorMsg = document.getElementById(`error-${model}`);
+            errorMsg.textContent = '❌ ' + message;
+            errorMsg.classList.add('show');
+        }
+
+        function hideError(model) {
+            const errorMsg = document.getElementById(`error-${model}`);
+            errorMsg.classList.remove('show');
+        }
+    </script>
+</body>
+</html>

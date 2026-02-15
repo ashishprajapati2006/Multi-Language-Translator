@@ -1,0 +1,14 @@
+torch
+transformers
+sentencepiece
+accelerate
+safetensors
+streamlit
+numpy
+pandas
+matplotlib
+flask
+seaborn
+nltk
+tqdm
+datasets
