@@ -1,7 +1,8 @@
 from flask import Flask, render_template, request, jsonify
 import torch
 import torch.nn as nn
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+from transformers import MBart50TokenizerFast, MBartForConditionalGeneration
+from huggingface_hub import hf_hub_download
 import pickle
 import os
 import unicodedata
@@ -12,6 +13,7 @@ app = Flask(__name__)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_DIR = os.path.join(BASE_DIR, 'models')
 MBART_MODEL_DIR = os.path.join(BASE_DIR, 'models', 'mbart_multilingual')
+MODEL_NAME = "ashishprajapati2006/translator-model"
 
 # Define special tokens for custom model
 PAD_TOKEN = '<PAD>'
@@ -111,16 +113,19 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 loaded_custom_models = {}
 
 def load_custom_model(src_lang, tgt_lang):
-    """Load a custom translation model from pickle file"""
+    """Load a custom translation model from Hugging Face pickle file."""
     model_key = f"{src_lang}_to_{tgt_lang}"
-    
+
     if model_key in loaded_custom_models:
         return loaded_custom_models[model_key]
-    
-    model_path = os.path.join(MODEL_DIR, f'translator_{src_lang}_to_{tgt_lang}.pkl')
-    
-    if not os.path.exists(model_path):
+
+    if model_key != "en_US_to_es_ES":
         return None
+
+    pkl_path = hf_hub_download(
+        repo_id=MODEL_NAME,
+        filename="translator_en_US_to_es_ES.pkl",
+    )
     
     class _ModelUnpickler(pickle.Unpickler):
         def find_class(self, module, name):
@@ -128,7 +133,7 @@ def load_custom_model(src_lang, tgt_lang):
                 return Vocabulary
             return super().find_class(module, name)
 
-    with open(model_path, 'rb') as f:
+    with open(pkl_path, 'rb') as f:
         model_data = _ModelUnpickler(f).load()
     
     src_vocab = model_data['src_vocab']
@@ -224,18 +229,28 @@ language_names = {
 }
 
 # Load mBART model and tokenizer
-print(f"Loading mBART model from {MBART_MODEL_DIR}...")
+print(f"Loading mBART model from {MODEL_NAME}...")
 
 try:
-    mbart_tokenizer = AutoTokenizer.from_pretrained(MBART_MODEL_DIR, use_fast=False)
-    mbart_model = AutoModelForSeq2SeqLM.from_pretrained(MBART_MODEL_DIR).to(device)
+    mbart_tokenizer = MBart50TokenizerFast.from_pretrained(
+        MODEL_NAME,
+        subfolder="mbart_multilingual",
+    )
+    mbart_model = MBartForConditionalGeneration.from_pretrained(
+        MODEL_NAME,
+        subfolder="mbart_multilingual",
+    ).to(device)
     mbart_model.eval()
     print(f"mBART model loaded successfully on {device}")
 except Exception as e:
     print(f"Error loading mBART model: {e}")
     print("Falling back to base mBART model...")
-    mbart_tokenizer = AutoTokenizer.from_pretrained("facebook/mbart-large-50-many-to-many-mmt", use_fast=False)
-    mbart_model = AutoModelForSeq2SeqLM.from_pretrained("facebook/mbart-large-50-many-to-many-mmt").to(device)
+    mbart_tokenizer = MBart50TokenizerFast.from_pretrained(
+        "facebook/mbart-large-50-many-to-many-mmt",
+    )
+    mbart_model = MBartForConditionalGeneration.from_pretrained(
+        "facebook/mbart-large-50-many-to-many-mmt",
+    ).to(device)
     mbart_model.eval()
 
 def translate_mbart(text, src_lang, tgt_lang):

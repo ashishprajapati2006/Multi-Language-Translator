@@ -6,11 +6,13 @@ import pickle
 import streamlit as st
 import torch
 import torch.nn as nn
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+from transformers import MBart50TokenizerFast, MBartForConditionalGeneration
+from huggingface_hub import hf_hub_download
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_DIR = os.path.join(BASE_DIR, "models")
 MBART_MODEL_DIR = os.path.join(BASE_DIR, "models", "mbart_multilingual")
+MODEL_NAME = "ashishprajapati2006/translator-model"
 
 # Define special tokens for custom model
 PAD_TOKEN = "<PAD>"
@@ -156,9 +158,14 @@ _device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 @st.cache_resource(show_spinner=False)
 def load_custom_model_cached(src_lang, tgt_lang):
-    model_path = os.path.join(MODEL_DIR, f"translator_{src_lang}_to_{tgt_lang}.pkl")
-    if not os.path.exists(model_path):
+    model_key = f"{src_lang}_to_{tgt_lang}"
+    if model_key != "en_US_to_es_ES":
         return None
+
+    pkl_path = hf_hub_download(
+        repo_id=MODEL_NAME,
+        filename="translator_en_US_to_es_ES.pkl",
+    )
 
     class _ModelUnpickler(pickle.Unpickler):
         def find_class(self, module, name):
@@ -166,7 +173,7 @@ def load_custom_model_cached(src_lang, tgt_lang):
                 return Vocabulary
             return super().find_class(module, name)
 
-    with open(model_path, "rb") as f:
+    with open(pkl_path, "rb") as f:
         model_data = _ModelUnpickler(f).load()
 
     src_vocab = model_data["src_vocab"]
@@ -204,12 +211,13 @@ def load_custom_model_cached(src_lang, tgt_lang):
 @st.cache_resource(show_spinner=False)
 def load_mbart_model():
     try:
-        # Load base mBART model from Hugging Face
-        tokenizer = AutoTokenizer.from_pretrained(
-            "facebook/mbart-large-50-many-to-many-mmt", use_fast=False
+        tokenizer = MBart50TokenizerFast.from_pretrained(
+            MODEL_NAME,
+            subfolder="mbart_multilingual",
         )
-        model = AutoModelForSeq2SeqLM.from_pretrained(
-            "facebook/mbart-large-50-many-to-many-mmt"
+        model = MBartForConditionalGeneration.from_pretrained(
+            MODEL_NAME,
+            subfolder="mbart_multilingual",
         ).to(_device)
         model.eval()
         return tokenizer, model, None

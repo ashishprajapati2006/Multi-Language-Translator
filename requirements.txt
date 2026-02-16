@@ -12,3 +12,4 @@ seaborn
 nltk
 tqdm
 datasets
+huggingface_hub
