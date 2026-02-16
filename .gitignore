@@ -29,5 +29,8 @@ models/
 *.bin
 *.pt
 *.pkl
+*.safetensors
+*.json
 venv/
 __pycache__/
+.vercel/
