@@ -6,7 +6,7 @@ const CONFIG = {
   // Default fallback URLs: if running on localhost, use local backend port 5000;
   // otherwise, default to Render URL if provided, or empty string for manual configuration.
   DEFAULT_LOCAL_URL: "http://localhost:5000",
-  DEFAULT_RENDER_URL: "https://multi-language-translator.onrender.com",
+  DEFAULT_RENDER_URL: "https://multi-language-translator-1-ik9b.onrender.com",
   STORAGE_KEY: "translator_backend_url",
 
   /**
