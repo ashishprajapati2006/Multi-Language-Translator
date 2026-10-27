@@ -1,0 +1,12 @@
+# Core Web API & WSGI Server
+flask>=3.0.0
+flask-cors>=4.0.0
+gunicorn>=21.2.0
+
+# Deep Learning & Transformers
+torch>=2.0.0
+transformers>=4.35.0
+sentencepiece>=0.1.99
+safetensors>=0.4.0
+huggingface_hub>=0.20.0
+accelerate>=0.25.0
