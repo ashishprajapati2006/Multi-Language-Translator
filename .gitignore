@@ -34,8 +34,11 @@ venv.bak/
 .env.*.local
 
 # ML Models & Checkpoints (downloaded on demand or too large for git)
-models/
+/models/
 backend/models/mbart_multilingual/
+!backend/models/
+!backend/models/*.py
+!backend/models/__init__.py
 *.pkl
 *.safetensors
 *.pt

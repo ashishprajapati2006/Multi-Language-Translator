@@ -1,10 +1,20 @@
 import os
+import sys
 import time
 import threading
 from flask import Flask, request, jsonify
 
-from models.seq2seq import load_custom_model, translate_custom
-from models.mbart import translate_mbart, MBART_LANGUAGES, get_mbart_status, get_mbart_model
+# Guarantee backend directory is in Python module search path
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+if CURRENT_DIR not in sys.path:
+    sys.path.insert(0, CURRENT_DIR)
+
+try:
+    from models.seq2seq import load_custom_model, translate_custom
+    from models.mbart import translate_mbart, MBART_LANGUAGES, get_mbart_status, get_mbart_model
+except ImportError:
+    from backend.models.seq2seq import load_custom_model, translate_custom
+    from backend.models.mbart import translate_mbart, MBART_LANGUAGES, get_mbart_status, get_mbart_model
 
 app = Flask(__name__)
 
